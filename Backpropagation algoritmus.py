@@ -66,17 +66,45 @@ class Activation_functions:
 
         return self.activation_function
 
+    def process_derivation_of_activation_function(self, Z):
+        if activation_function_name == 'Sigmoid':
+            self.activation_function = self.Sigmoid_derivation(Z)
+        elif activation_function_name == 'Tanh':
+            self.activation_function = self.Tanh_derivation(Z)
+        elif activation_function_name == 'ReLU':
+            self.activation_function = self.ReLU_derivation(Z)
+
+        return self.activation_function
+
     def Sigmoid(self, Z):
         return 1 / (1 + np.exp(-Z))
 
     def Tanh(self, Z):
-        return np.exp(Z) - np.exp(-Z) / np.exp(Z) + np.exp(-Z)
+            return (np.exp(Z) - np.exp(-Z)) / (np.exp(Z) + np.exp(-Z))
 
     def ReLU(self, Z):
         return np.maximum(0, Z)
 
+    def Sigmoid_derivation(self, Z):
+        Sigmoid_value = self.Sigmoid(Z)
+        return Sigmoid_value * (1 - Sigmoid_value)
+
+    def Tanh_derivation(self, Z):
+        Tanh_value = self.Tanh(Z)
+        return 1 - np.power(Tanh_value, 2)
+
+    def ReLU_derivation(self, Z):
+        # if Z > 0:
+        #     return 1
+        # else:
+        #     return 0
+        return np.where(Z > 0, 1, 0)
+
     def get_activation_function(self, Z):
         return self.process_activation_function(Z)
+
+    def get_derivation_of_activation_function(self, Z):
+        return self.process_derivation_of_activation_function(Z)
 
 
 class MLP:
@@ -85,14 +113,22 @@ class MLP:
         self.Y = Y
         self.layers = []
 
+    def set_X(self, X):
+        self.X = X
+
+    def set_Y(self, Y):
+        self.Y = Y
+
     def create_layer(self, input_size, output_size, W, B):
+        """Where first two values is a matrix size, W is weight, B is bias, Z is intermediate result, h is output"""
         layer = {
             'input_size': input_size,
             'output_size': output_size,
             'W': W,
             'B': B,
             'Z': None,
-            'h': None
+            'h': None,
+            'error': None
         }
 
         self.layers.append(layer)
@@ -102,106 +138,112 @@ class MLP:
         for layer in self.layers:
             print(Fore.LIGHTYELLOW_EX + f'Layer {self.layers.index(layer) + 1}')
             print(Fore.LIGHTGREEN_EX +
-                  f"Size: {layer['input_size']}x{layer['output_size']},\n Weight: {layer['W']},\n Bias: {layer['B']}\n")
+                  f"Size: {layer['input_size']}x{layer['output_size']},"
+                  f"\n Weight: {layer['W']},\n Bias: {layer['B']},\n"
+                  f" Z: {layer['Z']},\n h: {layer['h']}\n")
 
     def forward(self, x):
         """Forward input x to each layer, each layer recalculate inputs values and forward to the up layer"""
+
+        """For first layer"""
+        """Input x is 4x2 matrix:
+            [[0, 0], 
+             [0, 1], 
+             [1, 0], 
+             [1, 1]]
+        """
+        """Bias is 1x4 matrix: [0, 0, 0, 0]"""
+        """W is 2x4 matrix with random numbers"""
+        """mxn * nxp = mxp"""
         for layer in self.layers:
-            """Calculate intermediate result"""
+            """Calculate intermediate result, np.dot for multiplication matrix"""
             layer['Z'] = np.dot(x, layer['W']) + layer['B']
             """x = layer['Z']"""
 
-            """Z: [z1, z2, z3, z4]"""
+            """For first layer"""
+            """Z is 4x4 matrix, after multiplication and adding: 
+                [z11, z12, z13, z14
+                 z21, z22, z23, z24
+                 z31, z32, z33, z34
+                 z41, z42, z43, z44]
+            """
 
             """Forward result to activation function(Sigmoid, Tanh, ReLU)"""
             activation_function_method = Activation_functions()
             layer['h'] = activation_function_method.get_activation_function(layer['Z'])
 
-            """h: [a1, a2, a3, a4]"""
+            """For first layer"""
+            """h is 4x4 matrix: [a11, a12, a13, a14
+                   a21, a22, a23, a24
+                   a31, a32, a33, a34
+                   a41, a42, a43, a44]"""
+
             """Will be put how input to the next layer"""
             x = layer['h']
 
+            """For last layer, the value h is output y(labels)"""
+            """x -> model -> y"""
+
+    def backward(self):
+        predicated_output = self.layers[-1]['h']
+        activation_function_method = Activation_functions()
+        derivation_of_activation_function = activation_function_method.get_derivation_of_activation_function(self.layers[-1]['Z'])
+
+        output_error = 2 * (self.layers[-1]['h'] - self.Y) / self.layers[-1]['h'].shape[0]
+        #error_output = (predicated_output - self.Y) * derivation_of_activation_function
+
+        # grad_W = np.dot(self.layers[-2]['h'].T, error_output)
+        # grad_B = np.sum(error_output, axis=0, keepdims=True)
+
+        # self.layers[-1]['W'] -= learning_rate * grad_W
+        # self.layers[-1]['B'] -= learning_rate * grad_B
+        output_delta = output_error * derivation_of_activation_function
+
+        for i in range(len(self.layers)-1, -1, -1):
+            current_layer = self.layers[i]
+            
+            # Получаем входные данные для текущего слоя
+            if i == 0:
+                layer_input = self.X
+            else:
+                layer_input = self.layers[i-1]['h']
+                
+            # Вычисляем градиенты
+            grad_W = np.dot(layer_input.T, output_delta)
+            grad_B = np.sum(output_delta, axis=0, keepdims=True)
+            
+            # Обновляем веса и смещения
+            current_layer['W'] -= learning_rate * grad_W
+            current_layer['B'] -= learning_rate * grad_B
+            
+            # Если это не первый слой, пропагируем ошибку дальше
+            if i > 0:
+                output_delta = np.dot(output_delta, current_layer['W'].T) * \
+                            activation_function_method.get_derivation_of_activation_function(self.layers[i-1]['Z'])
 
 
 
-    def backward(self, x):
-        pass
-
-    def MSE_Loss(self):
-        pass
-
-
-"""Loss function"""
-
-
-def plot_metrics(train_losses):
-    plt.figure(figsize=(10, 5))
-    plt.subplot(1, 2, 1)
-    plt.plot(train_losses, label='Train Loss')
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss')
-    plt.legend()
-
-    plt.show()
+    def MSE_Loss_evaluating(self):
+        """MSE loss function"""
+        predicated_output = self.layers[-1]['h']
+        """Where len(self.Y) is a batch size, Y is correct output, predicated_output is last output(y) - predication"""
+        error = np.power(self.Y - predicated_output, 2).sum() / 2
+        """So, here we have function with elements: (d - y)^2, is equal to (y - d)^2!!!
+            , where d is correct output, y is predicated output.
+        """
+        return error
 
 
-def train_model(model, epochs=10):
-    training_losses = []
-    evaluation_accuracies = []
-
-    for epoch in range(epochs):
-        model.train()
-
-        """Training information"""
-        training_info = {
-            'running_loss': 0.0,
-            'correct': 0,
-            'total': 0
-        }
-
-        for inputs, labels in train_loader:
-            #optimizer.zero_grad()
-
-            outputs = model(inputs)
-            loss = MSE_LOSS(outputs, labels)
-            #loss.backward()
-            #optimizer.step()
-
-            """Append training information"""
-            training_info['running_loss'] += loss.item()
-            # predicated output
-            training_info['total'] += labels.size(0)
-            training_info['correct'] += (predicted == labels).sum().item()
-
-        training_accuracy = training_info['correct'] / training_info['total']
-        training_losses.append(training_info['running_loss'] / len(train_loader))
-
-        """Evaluation model"""
-        evaluation_accuracy = evaluate_model(model)
-        evaluation_accuracies.append(evaluation_accuracy)
-
-        """Logging"""
-        print(Fore.GREEN + "--------------------------------------------------------------------------------\n",
-              Fore.LIGHTMAGENTA_EX + f"Epoch {epoch + 1},",
-              Fore.LIGHTRED_EX + f" Train Loss: {training_info['running_loss'] / len(train_loader):.4f}, ",
-              Fore.LIGHTGREEN_EX + f"Train Accuracy: {training_accuracy:.4f}, ",
-              Fore.LIGHTCYAN_EX + f"Test Accuracy: {evaluation_accuracy:.4f}",
-              Fore.GREEN + "\n--------------------------------------------------------------------------------")
-
-    plot_metrics(training_losses)
-    return model
+    def test_model(self, test_data):
+        self.forward(test_data)
+        output = model.layers[-1]['h']
+        print(Fore.GREEN + f'Test MSE: {self.MSE_Loss_evaluating()}')
+        return output
 
 
-def evaluate_model(model):
-    model.eval()
+def plot_metrics():
+    pass
 
-    training_info = {
-        'correct': 0,
-        'total': 0
-    }
-
-    evaluation_accuracy = training_info['correct'] / training_info['total']
-    return evaluation_accuracy
 
 
 if __name__ == '__main__':
@@ -218,8 +260,8 @@ if __name__ == '__main__':
     W1 = np.random.uniform(-0.1, 0.1, (2, 4))
     W2 = np.random.uniform(-0.1, 0.1, (4, 1))
 
-    B1 = np.array([0, 0, 0, 0])
-    B2 = np.array([0])
+    B1 = np.zeros((1, 4))
+    B2 = np.zeros((1, 1))
     """
                 0
             0   0   
@@ -231,9 +273,64 @@ if __name__ == '__main__':
     L1 = model.create_layer(2, 4, W1, B1)
     L2 = model.create_layer(4, 1, W2, B2)
 
-    model.show_layers_information()
-    model.forward(X)
-    model.show_layers_information()
+    training_data = ([0, 0], [0, 1], [1, 0], [1, 1])
+
+
+
+
+    # """Training model"""
+    # #model.show_layers_information()
+
+    # model.set_X(X[0])
+    # model.set_Y(Y[0])
+    # model.forward(X[0])
+    # """Naw we need to evaluate loss function, MSE loss function. To do it we need do backward function"""
+    # error_rate = model.MSE_Loss_evaluating()
+    # print(Fore.GREEN + f'Error rate: {error_rate}')
+    # #model.show_layers_information()
+
+    # model.backward()
+
+    # model.show_layers_information()
+
+    # test_output = model.test_model(X[0])
+    # print(Fore.LIGHTGREEN_EX + f'Test output: {test_output}')
+    losses = []
+        
+    for epoch in range(epoch_count):
+        epoch_loss = 0
+        # Проходим по каждому примеру отдельно
+        for i in range(len(X)):
+            x_i = X[i].reshape(1, -1)  # Преобразуем в матрицу 1x2
+            y_i = Y[i].reshape(1, -1)  # Преобразуем в матрицу 1x1
+
+            # Прямой проход
+            model.forward(x_i)
+
+            # Обратный проход
+            model.backward()
+
+            # Вычисляем ошибку
+            loss = model.MSE_Loss_evaluating()
+            epoch_loss += loss
+
+        # Средняя ошибка за эпоху
+        avg_loss = epoch_loss / len(X)
+        losses.append(avg_loss)
+
+        if (epoch + 1) % 50 == 0:
+            print(f"Epoch {epoch+1}, Loss: {avg_loss:.4f}")
+
+
+    test_input = np.array([0, 1]).reshape(1, -1)
+    model.forward(test_input)
+    prediction = model.layers[-1]['h']
+    print(f"Input: [0, 1], Predicted: {prediction[0][0]:.4f}")
+
+
+
+
+
 
 
     #train_model(model, epochs=epoch_count)
