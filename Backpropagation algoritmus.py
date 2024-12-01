@@ -98,10 +98,7 @@ class Activation_functions:
         return 1 - np.power(Tanh_value, 2)
 
     def ReLU_derivation(self, Z):
-        if Z > 0:
-            return 1
-        else:
-            return 0
+        return np.where(Z > 0, 1, 0)
 
     def get_activation_function(self, layer):
         return self.process_activation_function(layer['Z'], layer['activation'])
@@ -123,7 +120,7 @@ class MLP:
     def set_Y(self, Y):
         self.Y = Y
 
-    def create_layer(self, input_size, output_size, W, B, activation='sigmoid'):
+    def create_layer(self, input_size, output_size, W, B, activation):
         """Where first two values is a matrix size, W is weight, B is bias, Z is intermediate result, a is output"""
         layer = {
             'input_size': input_size,
@@ -197,16 +194,21 @@ class MLP:
             """For last layer, the value a is output y(labels)"""
             """x -> model -> y"""
 
+        return x
+
     def backward(self, error):
         #error = self.layers[-1]['a'] - self.Y
+
+        """For output layer"""
         activation_function_method = Activation_functions()
         derivation_of_activation_function = activation_function_method.get_derivation_of_activation_function(
             self.layers[-1])
 
         delta_output_error = error * derivation_of_activation_function
 
-        """Correct ???"""
+        """Gradient off loss function to weight, (last layer input) * (delta==error * (f'(Z)))"""
         grad_MSE_W = np.dot(self.layers[-2]['a'].T, delta_output_error)
+        """For bigger batch size"""
         grad_MSE_B = np.sum(delta_output_error, axis=0, keepdims=True)
         #grad_MSE_a = delta_output_error * self.layers[-1]['W']
 
@@ -214,6 +216,7 @@ class MLP:
         current_layer = self.layers[-1]
         self.update_weights(current_layer, grad_MSE_W, grad_MSE_B)
 
+        """For next layer"""
         derivation_of_activation_function_hidden = activation_function_method.get_derivation_of_activation_function(
             self.layers[-2])
 
@@ -221,7 +224,7 @@ class MLP:
         next_delta_hidden_layer = error_for_hidden_layer * derivation_of_activation_function_hidden
 
         grad_MSE_W = np.dot(self.X.T, next_delta_hidden_layer)
-        grad_MSE_B = np.sum(next_delta_hidden_layer, axis=0, keepdims=True)
+        grad_MSE_B = np.sum(delta_output_error, axis=0, keepdims=True)
         # grad_MSE_a = delta_output_error * self.layers[-1]['W']
 
         """Updating weights for hidden layer"""
@@ -242,7 +245,7 @@ class MLP:
         """MSE loss function"""
         predicated_output = self.layers[-1]['a']
         """Where len(self.Y) is a batch size, Y is correct output, predicated_output is last output(y) - predication"""
-        error = np.power(self.Y - predicated_output, 2).sum() / (len(self.Y))
+        error = np.power(self.Y - predicated_output, 2).sum() / (len(self.Y) * 2)
         """So, here we have function with elements: (d - y)^2, is equal to (y - d)^2!!!
             , where d is correct output, y is predicated output.
         """
@@ -326,16 +329,17 @@ if __name__ == '__main__':
         total_error = 0
 
         for i in range(training_data_size):
-            for input_set, label in training_data:
-                model.set_X(input_set)
-                model.set_Y(label)
+            #for input_set, label in training_data:
+            model.set_X(training_data[i][0])
+            model.set_Y(training_data[i][1])
 
-                model.forward(input_set)
+            model.forward(training_data[i][0])
 
-                error = model.get_last_layer_error()
-                model.backward(error)
+            error = model.get_last_layer_error()
+            model.backward(error)
 
-                total_error += model.MSE_Loss_evaluating()
+            total_error += model.MSE_Loss_evaluating()
+
 
         average = total_error / len(training_data)
         losses.append(total_error / len(training_data))
@@ -345,7 +349,7 @@ if __name__ == '__main__':
             print("We reached the optimal model")
             break
 
-        if (epoch + 1) % 10 == 0:
+        if (epoch + 1) % 2 == 0:
             print(f"Epoch {epoch + 1}/{epoch_count}, Loss: {average:.5f}")
 
     plt.plot(losses)
