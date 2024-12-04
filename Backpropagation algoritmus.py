@@ -61,6 +61,7 @@ class Activation_functions:
         self.activation_function = None
 
     def process_activation_function(self, Z, activation_function_name):
+        """Function to processing choose of activation function"""
         if activation_function_name == 'Sigmoid':
             self.activation_function = self.Sigmoid(Z)
         elif activation_function_name == 'Tanh':
@@ -71,6 +72,7 @@ class Activation_functions:
         return self.activation_function
 
     def process_derivation_of_activation_function(self, Z, activation_function_name):
+        """Function to processing choose of derivation of activation function"""
         if activation_function_name == 'Sigmoid':
             self.activation_function = self.Sigmoid_derivation(Z)
         elif activation_function_name == 'Tanh':
@@ -98,6 +100,7 @@ class Activation_functions:
         return 1 - np.power(Tanh_value, 2)
 
     def ReLU_derivation(self, Z):
+        """https://www.delftstack.com/howto/python/relu-derivative-python/"""
         return np.where(Z > 0, 1, 0)
 
     def get_activation_function(self, layer):
@@ -198,6 +201,12 @@ class MLP:
 
     def backward(self, error):
         #error = self.layers[-1]['a'] - self.Y
+        """Maybe was better create recursive function for hidden layers, but before create function for last layer.
+            with returned values of error for the next layer. In this stap we need to calculate three gradients
+            relatively to error function MSE: (for weights, bias and predicted output
+            and recalculate the weights and biases for each layer)
+
+            @error - is a error for last(output) layer"""
 
         """For output layer"""
         activation_function_method = Activation_functions()
@@ -208,31 +217,55 @@ class MLP:
 
         """Gradient off loss function to weight, (last layer input) * (delta==error * (f'(Z)))"""
         grad_MSE_W = np.dot(self.layers[-2]['a'].T, delta_output_error)
-        """For bigger batch size"""
+        """For bigger batch size use sum for each row, keepdims by default is False, 
+        source: https://dnmtechs.com/understanding-the-keepdims-parameter-in-numpy-sum/"""
         grad_MSE_B = np.sum(delta_output_error, axis=0, keepdims=True)
-        #grad_MSE_a = delta_output_error * self.layers[-1]['W']
+        #grad_MSE_a = np.dot(delta_output_error, self.layers[-1]['W'].T)
 
         """Updating weights for output layer"""
         current_layer = self.layers[-1]
         self.update_weights(current_layer, grad_MSE_W, grad_MSE_B)
 
         """For next layer"""
-        derivation_of_activation_function_hidden = activation_function_method.get_derivation_of_activation_function(
-            self.layers[-2])
+        """So, for documentation, we need tests OR, AND, XOR problems with different layers,
+         to do this create loop to recalculate weights and biases for each layer, 
+         maybe it wasn't better way to do this, but it's simple """
+        iterator = len(self.layers)
+        for _ in range(len(self.layers) - 1):
+            """ layers[iterator - 3] - Layer before current layer
+                layers[iterator - 2] - Current layer (if iterator = len(self.layers),
+                                       then current layer is layer after output layer)
+                layers[iterator - 1] - Next layer"""
+            current_layer = self.layers[iterator - 2]
 
-        error_for_hidden_layer = np.dot(delta_output_error, self.layers[-1]['W'].T)
-        next_delta_hidden_layer = error_for_hidden_layer * derivation_of_activation_function_hidden
+            derivation_of_activation_function_hidden = activation_function_method.get_derivation_of_activation_function(
+                current_layer)
 
-        grad_MSE_W = np.dot(self.X.T, next_delta_hidden_layer)
-        grad_MSE_B = np.sum(delta_output_error, axis=0, keepdims=True)
-        # grad_MSE_a = delta_output_error * self.layers[-1]['W']
+            #print(f"Current layer: {current_layer}")
+            error_for_hidden_layer = np.dot(delta_output_error, self.layers[iterator-1]['W'].T)
 
-        """Updating weights for hidden layer"""
-        current_layer = self.layers[-2]
-        self.update_weights(current_layer, grad_MSE_W, grad_MSE_B)
+            """@next_delta_hidden_layer - dMSE/dah * f'(Zh)"""
+            next_delta_hidden_layer = error_for_hidden_layer * derivation_of_activation_function_hidden
+
+            """Control if we reach first(input) layer and don't have any more layers"""
+            if iterator == 2:
+                """First layer, don't have previous layer"""
+                grad_MSE_W = np.dot(self.X.T, next_delta_hidden_layer)
+            else:
+                grad_MSE_W = np.dot(self.layers[iterator - 3]['a'].T, next_delta_hidden_layer)
+            grad_MSE_B = np.sum(next_delta_hidden_layer, axis=0, keepdims=True)
+
+            """Updating weights for hidden layer"""
+            self.update_weights(current_layer, grad_MSE_W, grad_MSE_B)
+
+            """Updating values of MSE_a gradient to distribute it for next layer"""
+            delta_output_error = next_delta_hidden_layer
+            """Update iterator, go back to the next hidden layer to previous and update values of waiting and biases"""
+            iterator -= 1
 
     def update_weights(self, current_layer, grad_MSE_W, grad_MSE_B):
         if use_momentum:
+            """Momentum use a previous values of gradients with %"""
             current_layer['vW'] = momentum * current_layer['vW'] - learning_rate * grad_MSE_W
             current_layer['vB'] = momentum * current_layer['vB'] - learning_rate * grad_MSE_B
             current_layer['W'] += current_layer['vW']
@@ -280,8 +313,7 @@ class MLP:
         predicted_output = model.layers[-1]['a']
         Y_label = self.Y
         last_error = predicted_output - Y_label
-        return last_error
-
+        return last_error * 2
 
 if __name__ == '__main__':
     start_time = time.time()
@@ -295,7 +327,7 @@ if __name__ == '__main__':
 
     hidden_layer_size = 4
 
-    """Create matrix 2x4 for Weights and fill it with random values"""
+    """Create matrix 2x4 for Weights and fill it with random or static values"""
     W1 = np.random.randn(2, hidden_layer_size) * np.sqrt(1 / 2)
     W2 = np.random.randn(hidden_layer_size, 1) * np.sqrt(1 / 4)
 
@@ -310,7 +342,7 @@ if __name__ == '__main__':
     """
 
     L1 = model.create_layer(2, hidden_layer_size, W1, B1, activation=first_activation_function_name)
-    L2 = model.create_layer(hidden_layer_size, 1, W2, B2, activation=second_activation_function_name)
+    L3 = model.create_layer(hidden_layer_size, 1, W2, B2, activation=second_activation_function_name)
 
     """Training data"""
     training_data = [
