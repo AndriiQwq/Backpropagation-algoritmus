@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
 import time
 import os
 import configparser
@@ -22,7 +21,6 @@ use_momentum = False
 default_config = {
     'Settings': {
         'epoch_count': '500',
-        'show_confusion_matrix': 'False',
         'learning_rate': '0.01',
         'momentum': '0.9',
         'use_momentum': 'True',
@@ -33,7 +31,7 @@ default_config = {
 
 
 def get_config():
-    global epoch_count, show_confusion_matrix, learning_rate, momentum, first_activation_function_name, use_momentum, second_activation_function_name
+    global epoch_count, learning_rate, momentum, first_activation_function_name, use_momentum, second_activation_function_name
 
     epoch_count = config.getint('Settings', 'epoch_count')
     learning_rate = config.getfloat('Settings', 'learning_rate')
@@ -200,7 +198,6 @@ class MLP:
         return x
 
     def backward(self, error):
-        #error = self.layers[-1]['a'] - self.Y
         """Maybe was better create recursive function for hidden layers, but before create function for last layer.
             with returned values of error for the next layer. In this stap we need to calculate three gradients
             relatively to error function MSE: (for weights, bias and predicted output
@@ -241,7 +238,6 @@ class MLP:
             derivation_of_activation_function_hidden = activation_function_method.get_derivation_of_activation_function(
                 current_layer)
 
-            #print(f"Current layer: {current_layer}")
             error_for_hidden_layer = np.dot(delta_output_error, self.layers[iterator-1]['W'].T)
 
             """@next_delta_hidden_layer - dMSE/dah * f'(Zh)"""
@@ -288,9 +284,6 @@ class MLP:
         correct = 0
         print(Fore.GREEN + "-------------------------------------------------")
         for input_set, label in test_data:
-            # model.set_X(input_set)
-            # model.set_Y(label)
-
             model.forward(input_set)
             """a is 1x4 matrix: [a11, a12, a13, a14]"""
             output = self.layers[-1]['a']
@@ -329,7 +322,7 @@ if __name__ == '__main__':
 
     """Create matrix 2x4 for Weights and fill it with random or static values"""
     W1 = np.random.randn(2, hidden_layer_size) * np.sqrt(1 / 2)
-    W2 = np.random.randn(hidden_layer_size, 1) * np.sqrt(1 / 4)
+    W2 = np.random.randn(hidden_layer_size, 1) * np.sqrt(1 / hidden_layer_size)
 
     B1 = np.zeros((1, hidden_layer_size))
     B2 = np.zeros((1, 1))
@@ -342,7 +335,7 @@ if __name__ == '__main__':
     """
 
     L1 = model.create_layer(2, hidden_layer_size, W1, B1, activation=first_activation_function_name)
-    L3 = model.create_layer(hidden_layer_size, 1, W2, B2, activation=second_activation_function_name)
+    L2 = model.create_layer(hidden_layer_size, 1, W2, B2, activation=second_activation_function_name)
 
     """Training data"""
     training_data = [
@@ -361,7 +354,6 @@ if __name__ == '__main__':
         total_error = 0
 
         for i in range(training_data_size):
-            #for input_set, label in training_data:
             model.set_X(training_data[i][0])
             model.set_Y(training_data[i][1])
 
