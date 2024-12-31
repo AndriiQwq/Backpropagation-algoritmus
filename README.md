@@ -1,4 +1,4 @@
-# Backpropagation Algorithm for Solving AND, OR, and XOR Problems
+# Backpropagation Algorithm for Solving XOR Problems
 
 ## Overview
 This project implements a neural network to solve the **XOR** and other similar problems 
@@ -14,8 +14,8 @@ The configuration file allows the user to set parameters such as:
 
 - epochs
 - learning rate
-- momentum
 - use the momentum
+- momentum
 - activation function for layers 
 
 ### Key Features:
