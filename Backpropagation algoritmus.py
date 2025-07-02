@@ -306,7 +306,7 @@ class MLP:
         predicted_output = model.layers[-1]['a']
         Y_label = self.Y
         last_error = predicted_output - Y_label
-        return last_error * 2
+        return last_error
 
 if __name__ == '__main__':
     start_time = time.time()
