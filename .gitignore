@@ -1,5 +1,11 @@
+# Python
+__pycache__/
+build/
 
-/.idea
-.gitattributes
-.gitattributes
-.flake8.txt
+# Logs
+*.log
+logs/
+
+# Virtual Environment
+venv/
+env/
