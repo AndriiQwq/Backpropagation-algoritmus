@@ -13,12 +13,16 @@ class ConfigManager:
         
         self.default_config = {
             'Settings': {
-                'epoch_count': '500',
-                'learning_rate': '0.01',
+                'epoch_count': '200',
+                'learning_rate': '0.1',
                 'momentum': '0.9',
                 'use_momentum': 'True',
-                'first_activation_function_name(Sigmoid, Tanh, ReLU)': 'Sigmoid',
-                'second_activation_function_name(Sigmoid, Tanh, ReLU)': 'Sigmoid',
+                'first_activation_function_name(Sigmoid, Tanh, ReLU)': 'Tanh',
+                'second_activation_function_name(Sigmoid, Tanh, ReLU)': 'Tanh',
+            },
+            'Logging': {
+                'enable_logging': 'True',
+                'log_level': 'INFO'
             }
         }
         
@@ -29,15 +33,39 @@ class ConfigManager:
             # Create the config directory if it doesn't exist
             config_dir = os.path.dirname(self.config_file)
             os.makedirs(config_dir, exist_ok=True)
-            
+
             self.config.read_dict(self.default_config)
             with open(self.config_file, 'w') as configfile:
                 self.config.write(configfile)
-            print(Fore.LIGHTYELLOW_EX + 'Default configuration was created\n')
+
+            # Log to file if logging is enabled, otherwise print with status
+            if self.enable_logging:
+                try:
+                    from utils.logger import get_logger
+                    logger = get_logger("ConfigManager", self)
+                    logger.info('Default configuration was created')
+                    print(Fore.LIGHTBLUE_EX + 'Default configuration was created' + '\n' + Fore.LIGHTGREEN_EX + "Logger status: Enabled")
+                except ImportError:
+                    print(Fore.LIGHTBLUE_EX + 'Default configuration was created' + '\n' + Fore.RED + "Logger status: Disabled")
+            else:
+                print(Fore.LIGHTBLUE_EX + 'Default configuration was created' + '\n' + Fore.RED + "Logger status: Disabled")
         else:
-            print(Fore.LIGHTYELLOW_EX + 'Configuration loaded from config file\n')
             self.config.read(self.config_file)
+            self._log_config_status('Configuration loaded successfully', Fore.LIGHTGREEN_EX)
     
+    def _log_config_status(self, message, color=Fore.WHITE):
+        """Helper method for logging configuration loading status"""
+        try:
+            from utils.logger import get_logger
+            if self.enable_logging:
+                logger = get_logger("ConfigManager", self)
+                logger.info(message)
+                return
+        except ImportError:
+            pass
+        
+        print(color + message + '\n' + (Fore.RED + "Logger status: Disabled") if not self.enable_logging else (Fore.LIGHTGREEN_EX + "Logger status: Enabled"))
+        
     @property
     def epoch_count(self):
         return self.config.getint('Settings', 'epoch_count')
@@ -61,3 +89,11 @@ class ConfigManager:
     @property
     def second_activation_function_name(self):
         return self.config.get('Settings', 'second_activation_function_name(Sigmoid, Tanh, ReLU)')
+    
+    @property
+    def enable_logging(self):
+        return self.config.getboolean('Logging', 'enable_logging', fallback=True)
+    
+    @property
+    def log_level(self):
+        return self.config.get('Logging', 'log_level', fallback='INFO')

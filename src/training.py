@@ -1,6 +1,11 @@
 import numpy as np
+from utils.logger import get_logger
 
 def train_model(model, config):
+    """Logger setup"""
+    logger = get_logger("Training", config)
+    logger.info("Starting model training...")
+
     """Training data"""
     training_data = [
         (np.array([0, 0]).reshape(1, -1), np.array([0]).reshape(1, -1)),
@@ -28,16 +33,15 @@ def train_model(model, config):
 
             total_error += model.MSE_Loss_evaluating()
 
-
         average = total_error / len(training_data)
         losses.append(total_error / len(training_data))
 
         """Check stopping condition"""
         if average < 0.00001 or epoch == 20000:
-            print("We reached the optimal model")
+            logger.info("We reached the optimal model")
             break
 
         if (epoch + 1) % 2 == 0:
-            print(f"Epoch {epoch + 1}/{config.epoch_count}, Loss: {average:.5f}")
+            logger.info(f"Epoch {epoch + 1}/{config.epoch_count}, Loss: {average:.5f}")
 
     return losses
