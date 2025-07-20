@@ -97,3 +97,18 @@ class ConfigManager:
     @property
     def log_level(self):
         return self.config.get('Logging', 'log_level', fallback='INFO')
+
+    def get_all_model_settings(self):
+        """Get all model-related settings as dictionary for serialization"""
+        return {
+            'epoch_count': self.epoch_count,
+            'learning_rate': self.learning_rate,
+            'momentum': self.momentum,
+            'use_momentum': self.use_momentum,
+            'first_activation_function_name': self.first_activation_function_name,
+            'second_activation_function_name': self.second_activation_function_name
+        }
+    
+    def get_all_settings(self):
+        # TODO and add to project
+        pass

@@ -9,3 +9,6 @@ logs/
 # Virtual Environment
 venv/
 env/
+
+# Models
+*.npy

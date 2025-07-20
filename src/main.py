@@ -4,6 +4,7 @@ from config_manager import ConfigManager
 from training import train_model
 from utils.visualizer import vizualize_training_process
 from utils.logger import get_logger
+import uuid
 
 def main():
     """Initialize config"""
@@ -44,9 +45,21 @@ def main():
     logger.info(f"Training completed. Final loss: {losses[-1]:.6f}")
 
     """Visualize initial model"""
-    logger.info("Generating training visualization...")
-    vizualize_training_process(losses)
+    show_visualization = input("Show training visualization? (y/n): ").strip().lower()
+    if show_visualization == "y":
+        logger.info("Generating training visualization...")
+        vizualize_training_process(losses)
     logger.info("Training process completed successfully")
+
+    model.get_model_info()
+
+    is_save = input("Do you want to save the model? (y/n): ").strip().lower()
+    if is_save == "y":
+        unique_id = str(uuid.uuid4())
+        default_name = f"{unique_id}.npy"
+        model_name = input(f"Enter model name (default is default generated {default_name}): ").strip() or default_name
+        model.save_model(model_name)
+        logger.info(f"Model saved as {model_name}")
 
 if __name__ == "__main__":
     main()

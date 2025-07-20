@@ -1,14 +1,17 @@
 import numpy as np
 from activation_functions import Activation_functions
+from utils.logger import get_logger
+from model_manager import ModelManager 
 
 class MLP:
     def __init__(self, X, Y, config=None):
         self.X = X
         self.Y = Y
         self.layers = []
-        self.v = []
 
         self.config = config
+        self.logger = get_logger("MLP", config) if config else None
+        self.manager = ModelManager(config)
 
     def set_X(self, X):
         self.X = X
@@ -172,3 +175,20 @@ class MLP:
         Y_label = self.Y
         last_error = predicted_output - Y_label
         return last_error
+    
+    def save_model(self, file_path):
+        """Save model to file using ModelManager"""
+        return self.manager.save_model(self, file_path)
+
+    def load_model(self, file_path):
+        """Load model from file using ModelManager"""
+        return self.manager.load_model(self, file_path)
+
+    def get_model_info(self, file_path=None):
+        """Get information about current model or a saved model"""
+        if file_path is None:
+            # Show info about current model
+            return self.manager.get_current_model_info(self)
+        else:
+            # Show info about saved model
+            return self.manager.get_saved_model_info(file_path)

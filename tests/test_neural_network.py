@@ -10,7 +10,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 # And add imports 
 from mlp import MLP
-from data_utils import prepare_xor_data, initialize_weights_and_biases
+from data_handler import prepare_xor_data, initialize_weights_and_biases
 from config_manager import ConfigManager
 from training import train_model
 
@@ -81,6 +81,8 @@ if __name__ == '__main__':
     """Show layers information"""
     print(Fore.CYAN + "\nLayers information:")
     show_layers_information(model)
+    
+    model.get_model_info()
 
     end_time = time.time()
     print(Fore.MAGENTA + f'Total time: {end_time - start_time:.2f} seconds')
