@@ -171,6 +171,7 @@ class MLP:
         return error
 
     def get_last_layer_error(self):
+        """Get error for last layer, where last layer is output layer"""
         predicted_output = self.layers[-1]['a']
         Y_label = self.Y
         last_error = predicted_output - Y_label

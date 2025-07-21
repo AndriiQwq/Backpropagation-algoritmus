@@ -7,6 +7,7 @@ def prepare_xor_data():
     return X, Y
 
 def get_xor_training_data():
+    """Returns training data for XOR problem"""
     return [
         (np.array([0, 0]).reshape(1, -1), np.array([0]).reshape(1, -1)),
         (np.array([0, 1]).reshape(1, -1), np.array([1]).reshape(1, -1)),
@@ -15,6 +16,7 @@ def get_xor_training_data():
     ]
 
 def get_xor_test_data():
+    """Returns test data for XOR problem"""
     return [
         (np.array([0, 0]).reshape(1, -1), 0),
         (np.array([0, 1]).reshape(1, -1), 1),

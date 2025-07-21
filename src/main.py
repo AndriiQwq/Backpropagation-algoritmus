@@ -7,40 +7,37 @@ from utils.logger import get_logger
 import uuid
 
 def main():
-    """Initialize config"""
+    # Initialize config
     config = ConfigManager()
 
-    """Logger setup"""
+    # Logger setup
     logger = get_logger("Main", config)
     logger.info("Starting the main process...")
     logger.info(f"Configuration loaded: lr={config.learning_rate}, epochs={config.epoch_count}")
-    
-    """Prepare XOR data"""
+
+    # Prepare XOR data
     X, Y = prepare_xor_data()
     logger.info(f"XOR data prepared: {X.shape} inputs, {Y.shape} outputs")
 
-    """Initialize model"""
+    # Initialize model
     model = MLP(X, Y, config)
     logger.info("MLP model initialized")
 
-
-    """Initialize weights and biases"""
-
+    # Initialize weights and biases
     layer_sizes = config.layer_sizes  # example, [2, 4, 1]
     activations = config.activations  # example, ['Tanh', 'Tanh']
 
     weights, biases = initialize_weights_and_biases(layer_sizes)
 
-    """
-                0
-            0   0   
-    (input) ->  ->  0 (output)  
-            0   0   
-                0
-    """
+    #
+    #             0
+    #         0   0   
+    # (input) ->  ->  0 (output)  
+    #         0   0   
+    #             0
+    # 
 
-    """Create model layers"""
-
+    # Create model layers
     for i in range(len(layer_sizes) - 1):
         model.create_layer(
             layer_sizes[i],
@@ -50,28 +47,30 @@ def main():
             activation=activations[i]
         )
 
-    """Log the architecture of the network"""
+    # Log the architecture of the network
     arch_str = " -> ".join(str(size) for size in layer_sizes)
     activations_str = ", ".join(activations)
     logger.info(f"Network architecture: {arch_str} ({activations_str})")
 
-    """Prepare training data"""
+    # Prepare training data
     training_data = get_xor_training_data()
 
-    """Train model"""
+    # Train model
     logger.info("Starting model training...")
     losses = train_model(model, config, training_data)
     logger.info(f"Training completed. Final loss: {losses[-1]:.6f}")
 
-    """Visualize initial model"""
+    # Visualize initial model
     show_visualization = input("Show training visualization? (y/n): ").strip().lower()
     if show_visualization == "y":
         logger.info("Generating training visualization...")
         vizualize_training_process(losses)
     logger.info("Training process completed successfully")
 
+    # Show layers information
     model.get_model_info()
 
+    # Ask user if they want to test the model
     test_model = input("Do you want to test the model? (y/n): ").strip().lower()
     if test_model == "y":
         from utils.testing import test_model
@@ -80,6 +79,7 @@ def main():
         test_model(model, test_data)
         logger.info("Model testing completed")
 
+    # Ask user if they want to save the model
     is_save = input("Do you want to save the model? (y/n): ").strip().lower()
     if is_save == "y":
         unique_id = str(uuid.uuid4())
