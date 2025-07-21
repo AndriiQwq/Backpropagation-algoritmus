@@ -12,17 +12,19 @@ class ConfigManager:
         self.config = configparser.ConfigParser()
         
         self.default_config = {
-            'Settings': {
+            'Training': {
                 'epoch_count': '200',
                 'learning_rate': '0.1',
                 'momentum': '0.9',
                 'use_momentum': 'True',
-                'first_activation_function_name(Sigmoid, Tanh, ReLU)': 'Tanh',
-                'second_activation_function_name(Sigmoid, Tanh, ReLU)': 'Tanh',
             },
             'Logging': {
                 'enable_logging': 'True',
                 'log_level': 'INFO'
+            },
+            'Network': {
+                'layer_sizes': '2,4,1',
+                'activations': 'Tanh,Tanh'
             }
         }
         
@@ -68,27 +70,19 @@ class ConfigManager:
         
     @property
     def epoch_count(self):
-        return self.config.getint('Settings', 'epoch_count')
+        return self.config.getint('Training', 'epoch_count')
     
     @property
     def learning_rate(self):
-        return self.config.getfloat('Settings', 'learning_rate')
+        return self.config.getfloat('Training', 'learning_rate')
     
     @property
     def momentum(self):
-        return self.config.getfloat('Settings', 'momentum')
+        return self.config.getfloat('Training', 'momentum')
     
     @property
     def use_momentum(self):
-        return self.config.getboolean('Settings', 'use_momentum')
-    
-    @property
-    def first_activation_function_name(self):
-        return self.config.get('Settings', 'first_activation_function_name(Sigmoid, Tanh, ReLU)')
-    
-    @property
-    def second_activation_function_name(self):
-        return self.config.get('Settings', 'second_activation_function_name(Sigmoid, Tanh, ReLU)')
+        return self.config.getboolean('Training', 'use_momentum')
     
     @property
     def enable_logging(self):
@@ -97,6 +91,14 @@ class ConfigManager:
     @property
     def log_level(self):
         return self.config.get('Logging', 'log_level', fallback='INFO')
+    
+    @property
+    def layer_sizes(self):
+        return [int(size) for size in self.config.get('Network', 'layer_sizes', fallback='2,4,1').split(',')]
+    
+    @property
+    def activations(self):
+        return self.config.get('Network', 'activations', fallback='Tanh,Tanh').split(',')
 
     def get_all_model_settings(self):
         """Get all model-related settings as dictionary for serialization"""
@@ -105,8 +107,9 @@ class ConfigManager:
             'learning_rate': self.learning_rate,
             'momentum': self.momentum,
             'use_momentum': self.use_momentum,
-            'first_activation_function_name': self.first_activation_function_name,
-            'second_activation_function_name': self.second_activation_function_name
+            
+            'layer_sizes': self.layer_sizes,
+            'activations': self.activations,
         }
     
     def get_all_settings(self):

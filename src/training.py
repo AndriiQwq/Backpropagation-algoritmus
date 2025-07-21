@@ -1,18 +1,12 @@
 import numpy as np
 from utils.logger import get_logger
 
-def train_model(model, config):
+def train_model(model, config, training_data):
     """Logger setup"""
     logger = get_logger("Training", config)
     logger.info("Starting model training...")
 
     """Training data"""
-    training_data = [
-        (np.array([0, 0]).reshape(1, -1), np.array([0]).reshape(1, -1)),
-        (np.array([0, 1]).reshape(1, -1), np.array([1]).reshape(1, -1)),
-        (np.array([1, 0]).reshape(1, -1), np.array([1]).reshape(1, -1)),
-        (np.array([1, 1]).reshape(1, -1), np.array([0]).reshape(1, -1))
-    ]
     training_data_size = len(training_data)
     losses = []
 

@@ -6,12 +6,32 @@ def prepare_xor_data():
     Y = np.array([[0], [1], [1], [0]])
     return X, Y
 
-def initialize_weights_and_biases(input_size, hidden_layer_size):
-    """Create matrix 2x4 for Weights and fill it with random or static values"""
-    W1 = np.random.randn(input_size, hidden_layer_size) * np.sqrt(1 / input_size)
-    W2 = np.random.randn(hidden_layer_size, 1) * np.sqrt(1 / hidden_layer_size)
+def get_xor_training_data():
+    return [
+        (np.array([0, 0]).reshape(1, -1), np.array([0]).reshape(1, -1)),
+        (np.array([0, 1]).reshape(1, -1), np.array([1]).reshape(1, -1)),
+        (np.array([1, 0]).reshape(1, -1), np.array([1]).reshape(1, -1)),
+        (np.array([1, 1]).reshape(1, -1), np.array([0]).reshape(1, -1))
+    ]
 
-    B1 = np.zeros((1, hidden_layer_size))
-    B2 = np.zeros((1, 1))
-    
-    return W1, W2, B1, B2
+def get_xor_test_data():
+    return [
+        (np.array([0, 0]).reshape(1, -1), 0),
+        (np.array([0, 1]).reshape(1, -1), 1),
+        (np.array([1, 0]).reshape(1, -1), 1),
+        (np.array([1, 1]).reshape(1, -1), 0)
+    ]
+
+def initialize_weights_and_biases(layer_sizes):
+    """
+    layer_sizes: list of layer sizes, e.g. [2, 4, 1]
+    Returns lists of weights and offsets for each layer.
+    """
+    weights = []
+    biases = []
+    for i in range(len(layer_sizes) - 1):
+        W = np.random.randn(layer_sizes[i], layer_sizes[i+1])
+        B = np.zeros((1, layer_sizes[i+1]))
+        weights.append(W)
+        biases.append(B)
+    return weights, biases

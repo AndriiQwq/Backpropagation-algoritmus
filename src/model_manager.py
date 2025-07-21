@@ -63,6 +63,10 @@ class ModelManager:
                 # Update model's config with saved values
                 if model.config is not None:
                     for key, value in data['config'].items():
+                        # Skip properties without setter
+                        attr = getattr(type(model.config), key, None)
+                        if isinstance(attr, property) and not attr.fset:
+                            continue
                         if hasattr(model.config, key):
                             setattr(model.config, key, value)
             
@@ -112,8 +116,10 @@ class ModelManager:
             print(f"  Momentum: {info['config'].get('momentum', 'N/A')}")
             print(f"  Use momentum: {info['config'].get('use_momentum', 'N/A')}")
             print(f"  Epochs: {info['config'].get('epoch_count', 'N/A')}")
-            print(f"  First activation: {info['config'].get('first_activation_function_name', 'N/A')}")
-            print(f"  Second activation: {info['config'].get('second_activation_function_name', 'N/A')}")
+            if 'activations' in info['config']:
+                print("\nActivations:")
+                for idx, act in enumerate(info['config']['activations'], 1):
+                    print(f"  Layer {idx+1}: {act}")
         else:
             print(f"\nConfiguration: No config available")
         print("="*50)
@@ -171,8 +177,11 @@ class ModelManager:
                 print(f"  Momentum: {config.get('momentum', 'N/A')}")
                 print(f"  Use momentum: {config.get('use_momentum', 'N/A')}")
                 print(f"  Epochs: {config.get('epoch_count', 'N/A')}")
-                print(f"  First activation: {config.get('first_activation_function_name', 'N/A')}")
-                print(f"  Second activation: {config.get('second_activation_function_name', 'N/A')}")
+                if 'activations' in config:
+                    print("\nActivations:")
+                    for idx, act in enumerate(config['activations'], 1):
+                        print(f"  Layer {idx+1}: {act}")
+                
             else:
                 print(f"\nConfiguration: No config available")
             print("="*50)
